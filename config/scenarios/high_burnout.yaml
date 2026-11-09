@@ -1,0 +1,9 @@
+# Пример сценария: переопределяет только нужные ключи default.yaml
+# Запуск: python generate.py --config config/scenarios/high_burnout.yaml --out data/high_burnout.db
+groups:
+  burnout_share: 0.40
+  burnout_overload_share: 0.80
+load:
+  overload_events_mult: 2.5
+survey:
+  wave_every_weeks: 3

@@ -1,0 +1,201 @@
+# =====================================================================
+#  Конфиг генерации синтетического датасета по выгоранию учителей (v2)
+#  Доли и вероятности — от 0 до 1. Множители — относительно базы (1.0).
+#  Эффекты «на пике» — при латентном уровне выгорания 3 и полной выраженности,
+#  в остальных случаях масштабируются линейно.
+#  Почти у каждого блока есть enabled: false — эффект можно выключить.
+# =====================================================================
+
+seed: 42
+
+# ---------- Масштаб ----------
+scale:
+  n_teachers: 300
+  n_schools: 12
+  classes_per_school: [20, 36]
+  grades: [1, 11]
+  class_letters: ["А", "Б", "В", "Г"]
+  city: "г. Новоград"
+
+# ---------- Период ----------
+period:
+  start_date: "2025-09-01"         # понедельник
+  end_date:   "2026-05-24"         # воскресенье, включительно
+  holidays:                        # каникулы и праздничные дни: уроков нет
+    - ["2025-10-27", "2025-11-04"]
+    - ["2025-12-29", "2026-01-11"]
+    - ["2026-02-23", "2026-02-23"]
+    - ["2026-03-09", "2026-03-09"]
+    - ["2026-03-23", "2026-03-29"]
+    - ["2026-05-01", "2026-05-04"]
+    - ["2026-05-09", "2026-05-11"]
+  holiday_activity_mult: 0.25
+  work_saturday_share: 0.15        # доля учителей с шестидневкой
+
+# ---------- Группы учителей ----------
+groups:
+  burnout_share: 0.25              # доля учителей, у которых есть выгорание (в т.ч. уже к началу периода)
+  burnout_overload_share: 0.60     # из выгоревших — доля с доминирующим типом «перегрузка» (остальные — «отстранение»)
+  healthy_high_load_share: 0.12    # доля невыгоревших с постоянно высокой нагрузкой (устойчивые)
+  type_mixing: 0.35                # смешение типов: вес доминирующего типа ~ U(1 - mixing, 1), остальное — второй тип
+  behavior_expression: {mean: 0.9, sd: 0.35, min: 0.0, max: 1.6}
+                                   # насколько сильно выгорание проявляется в поведении у конкретного учителя
+                                   # (у части выгоревших поведение почти не меняется)
+
+# ---------- Динамика выгорания ----------
+burnout_dynamics:
+  initial_share: 0.35              # доля выгоревших, у которых выгорание началось ещё до начала периода
+  initial_onset_week_range: [-30, -2]
+  onset_week_range: [2, 30]        # для остальных — неделя начала роста
+  ramp_weeks_range: [4, 20]        # сколько недель до пика (S-образная кривая)
+  peak_level_range: [1.6, 3.0]
+  trajectory_noise_sd: 0.12        # случайное блуждание вокруг тренда (неровная траектория)
+  overload_lead_weeks: [2, 8]      # нагрузка у «перегруженных» растёт раньше выгорания
+  recovery_prob: 0.15              # частичное восстановление после каникул
+  recovery_drop: 0.8
+  baseline_level_sd: 0.25          # индивидуальный фоновый уровень (личная склонность)
+  weekly_noise_sd: 0.12            # краткосрочные колебания самочувствия (AR(1))
+
+# ---------- Сезонность и общие шоки ----------
+# events_mult / activity_mult / journal_mult — влияют на поведение ВСЕХ учителей;
+# stress — временная добавка к латентному уровню у всех (сказывается на ответах в опросах)
+seasonality:
+  enabled: true
+  periods:
+    - {name: "Начало учебного года", from: "2025-09-01", to: "2025-09-14", events_mult: 1.3,  activity_mult: 1.3,  journal_mult: 1.0, stress: 0.20}
+    - {name: "Конец 1 четверти",     from: "2025-10-13", to: "2025-10-26", events_mult: 1.15, activity_mult: 1.25, journal_mult: 2.0, stress: 0.25}
+    - {name: "Конец 2 четверти",     from: "2025-12-08", to: "2025-12-28", events_mult: 1.35, activity_mult: 1.3,  journal_mult: 2.0, stress: 0.35}
+    - {name: "Конец 3 четверти",     from: "2026-03-02", to: "2026-03-22", events_mult: 1.15, activity_mult: 1.25, journal_mult: 2.0, stress: 0.25}
+    - {name: "ВПР",                  from: "2026-04-06", to: "2026-04-26", events_mult: 1.2,  activity_mult: 1.15, journal_mult: 1.3, stress: 0.20}
+    - {name: "Конец года, экзамены", from: "2026-05-05", to: "2026-05-24", events_mult: 1.35, activity_mult: 1.3,  journal_mult: 2.2, stress: 0.40}
+  school_shocks:                   # проверки, аккредитация, ЧП — на уровне школы
+    enabled: true
+    weekly_prob: 0.03
+    duration_weeks: [1, 3]
+    events_mult: 1.5
+    activity_mult: 1.3
+    stress: 0.30
+
+# ---------- Расписание ----------
+timetable:
+  primary_teacher_share: 0.30      # учителя начальных классов: один класс, все уроки с ним
+  stavka_options: [1.0, 1.25, 1.5]
+  stavka_probs:   [0.45, 0.30, 0.25]
+  hours_per_stavka: 18
+  hours_noise_sd: 1.0
+  max_lessons_per_day: 7
+  lesson_duration_min: 45
+  first_lesson_time: "08:30"
+  break_min: 10
+  rebuild_dates: ["2026-01-12"]    # перестроение шаблона расписания (2-е полугодие)
+  cancel_prob: 0.03                # отмена урока
+  substitutions_per_week: 0.7      # замены за коллег (Пуассон)
+
+class_size: {mean: 25, sd: 4, min: 12, max: 34}
+attendance_rate: {mean: 0.92, sd: 0.04}
+
+# ---------- Влияние профиля на нагрузку ----------
+load:
+  overload_events_mult: 1.9        # рост частоты внеурочки на пике перегрузки
+  overload_substitutions_mult: 3.5 # рост числа замен
+  overload_participants_mult: 1.2
+  healthy_high_load_mult: 1.6      # постоянный множитель внеурочки у устойчивых
+  healthy_high_load_substitutions_mult: 2.0
+  disengaged_events_mult: 0.85
+
+# Мероприятия. rate — в неделю (Пуассон), duration — минуты, participants — диапазон.
+# for: primary | subject | any; need_grades — нужен класс из этих параллелей
+# start: фиксированное время начала; evening: вечером
+events:
+  - {name: "Урок",                   kind: lesson}
+  - {name: "Продлёнка",              rate: 2.5,  duration: [90, 180],  participants: [10, 25], overload_sensitive: true,  class_bound: true,  for: primary}
+  - {name: "Родительское собрание",  rate: 0.2,  duration: [60, 90],   participants: [8, 28],  overload_sensitive: true,  class_bound: true,  evening: true, homeroom: true}
+  - {name: "Педсовет",               rate: 0.2,  duration: [60, 120],  participants: [20, 60], overload_sensitive: false, class_bound: false}
+  - {name: "Классный час",           rate: 0.8,  duration: [40, 45],   participants: [15, 30], overload_sensitive: false, class_bound: true,  homeroom: true, homeroom_only: true}
+  - {name: "Кружок",                 rate: 0.6,  duration: [45, 90],   participants: [6, 15],  overload_sensitive: true,  class_bound: false}
+  - {name: "Подготовка к олимпиаде", rate: 0.4,  duration: [45, 90],   participants: [2, 8],   overload_sensitive: true,  class_bound: true,  for: subject}
+  - {name: "Консультация к ОГЭ/ЕГЭ", rate: 0.8,  duration: [45, 90],   participants: [5, 25],  overload_sensitive: true,  class_bound: true,  for: subject, need_grades: [9, 11]}
+  - {name: "Дежурство",              rate: 0.5,  duration: [30, 40],   participants: [30, 120], overload_sensitive: true, class_bound: false, start: "07:50"}
+  - {name: "Экскурсия",              rate: 0.06, duration: [180, 360], participants: [15, 30], overload_sensitive: true,  class_bound: true,  homeroom: true}
+  - {name: "Методобъединение",       rate: 0.25, duration: [60, 90],   participants: [5, 15],  overload_sensitive: false, class_bound: false}
+homeroom_share_subject: 0.5        # доля предметников с классным руководством
+
+# ---------- Активность в инструментах ----------
+activity:
+  # действия, привязанные к урокам (после урока выставить оценки / задать ДЗ)
+  after_lesson:
+    journal_grades_prob: 0.45
+    homework_assign_prob: 0.35
+    delay_min_lognormal: {mu: 3.5, sigma: 1.0}    # задержка после урока, минуты (медиана ~33 мин)
+  background_actions_per_workday: {mean: 9, sd: 3.5}
+  sessions_per_workday: 3.0        # фоновые действия собираются в сессии (Пуассон, min 1)
+  session_spread_min: 20
+  day_noise_sigma: 0.35            # дневная «всплесковость» (лог-нормальный множитель)
+  weekend_mult: 0.25
+  types:                           # фоновые действия
+    - {name: "chat_parents",    prob: 0.30, is_msg: true,  msg_mean: 2.5, desc: "Сообщение в чат родителей {cls}"}
+    - {name: "chat_students",   prob: 0.20, is_msg: true,  msg_mean: 2.0, desc: "Сообщение в чат класса {cls}"}
+    - {name: "chat_colleagues", prob: 0.15, is_msg: true,  msg_mean: 1.8, desc: "Сообщение коллегам"}
+    - {name: "homework_check",  prob: 0.20, is_msg: false, desc: "Проверка домашних работ, {cls}"}
+    - {name: "lesson_plan",     prob: 0.10, is_msg: false, desc: "Редактирование КТП"}
+    - {name: "report",          prob: 0.05, is_msg: false, desc: "Заполнение отчёта для администрации"}
+  lesson_types:
+    journal_grades:  "Выставление оценок в журнал, {cls}"
+    homework_assign: "Публикация домашнего задания, {cls}"
+  chars_per_msg: {mean: 110, sd: 35, min: 5}
+  evening_share: 0.15              # доля фоновых сессий после 19:00
+
+  overload_actions_mult: 1.3
+  overload_evening_share: 0.35
+  disengaged_actions_mult: 0.55
+  disengaged_msg_mult: 0.65
+  disengaged_after_lesson_mult: 0.7  # реже сразу выставляют оценки
+  burnout_chars_mult: 0.70
+  healthy_high_load_actions_mult: 1.2
+
+# ---------- Опросы ----------
+survey:
+  mode: waves                      # waves — волны раз в N недель; weekly — каждую неделю с вероятностью
+  wave_first_week: 2
+  wave_every_weeks: 4
+  wave_window_weeks: 2
+  weekly_prob: 0.35                # только для mode: weekly
+  response_rate: 0.80
+  burnout_nonresponse: 0.5         # при уровне 3 вероятность ответа ниже на 50% (MNAR)
+  wave_fatigue: 0.04               # падение отклика с каждой следующей волной
+  duplicate_prob: 0.03             # повторное прохождение в ту же волну
+  noise_sd: 0.40
+  burnout_types:                   # тип -> уровень (фазы по Бойко); уровень = таргет
+    - {type: "Нет признаков",  level: 0}
+    - {type: "Напряжение",     level: 1}
+    - {type: "Резистенция",    level: 2}
+    - {type: "Истощение",      level: 3}
+
+# ---------- Больничные ----------
+absence:
+  enabled: true
+  sick_weekly_prob: 0.012
+  sick_burnout_mult: 3.0           # при уровне 3 вероятность больничного выше в N раз
+  sick_days: [3, 14]
+  flu_seasons: [{from: "2026-01-19", to: "2026-02-22", mult: 2.0}]
+  activity_during_sick: 0.05
+
+# ---------- Найм и увольнения ----------
+churn:
+  enabled: true
+  late_hire_share: 0.05            # нанятые в течение года
+  quit_weekly_base: 0.0008
+  quit_burnout_mult: 15            # при уровне 3 вероятность увольнения выше в N раз
+
+# ---------- «Грязь» в данных ----------
+data_quality:
+  enabled: true
+  outage_day_prob: 0.01            # день без логов у всех (сбой выгрузки)
+  teacher_gap_weekly_prob: 0.01    # неделя без логов у учителя (работал в другом инструменте и т.п.)
+  activity_duplicate_prob: 0.005   # дубли записей в логе
+  schedule_missing_prob: 0.01      # событие не попало в календарь
+
+# ---------- Вывод ----------
+output:
+  write_truth_table: true          # _gen_teacher_truth и _gen_teacher_week_truth (НЕ для обучения)
+  export_panel_csv: true

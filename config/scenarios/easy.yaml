@@ -1,0 +1,25 @@
+# «Лабораторный» режим: реалистичные эффекты выключены, сигнал сильный.
+# Удобно для отладки пайплайна и сравнения с default.
+groups:
+  behavior_expression: {mean: 1.0, sd: 0.0, min: 1.0, max: 1.0}
+  type_mixing: 0.0
+burnout_dynamics:
+  initial_share: 0.0
+  ramp_weeks_range: [3, 10]
+  trajectory_noise_sd: 0.0
+seasonality: {enabled: false}
+absence: {enabled: false}
+churn: {enabled: false}
+data_quality: {enabled: false}
+survey:
+  mode: weekly
+  weekly_prob: 0.35
+  burnout_nonresponse: 0.0
+  duplicate_prob: 0.0
+  noise_sd: 0.35
+load:
+  overload_events_mult: 2.2
+activity:
+  disengaged_actions_mult: 0.45
+  disengaged_msg_mult: 0.5
+  burnout_chars_mult: 0.55
