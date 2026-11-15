@@ -4,16 +4,23 @@
   python baseline.py data/teacher_burnout.db
 Валидация — GroupKFold по user_id. Таргет — burnout_level >= 2.
 """
+
 import sqlite3
 import sys
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import GroupKFold
 
-F = ["event_hours", "activity_hours", "act_avg_participants_per_hour", "act_msg_cnt", "act_msg_char_cnt"]
+F = [
+    "event_hours",
+    "activity_hours",
+    "act_avg_participants_per_hour",
+    "act_msg_cnt",
+    "act_msg_char_cnt",
+]
 
 
 def add_features(p: pd.DataFrame) -> pd.DataFrame:
@@ -42,8 +49,13 @@ def cv_auc(d, cols, y):
 def main(db):
     con = sqlite3.connect(db)
     p = pd.read_sql("SELECT * FROM teacher_burnout_panel", con)
-    print(f"Панель: {len(p):,} строк, учителей {p.user_id.nunique()}, с таргетом {p.burnout_level.notna().sum():,}")
-    print("Распределение таргета:", p.burnout_level.value_counts(normalize=True).sort_index().round(3).to_dict())
+    print(
+        f"Панель: {len(p):,} строк, учителей {p.user_id.nunique()}, с таргетом {p.burnout_level.notna().sum():,}"
+    )
+    print(
+        "Распределение таргета:",
+        p.burnout_level.value_counts(normalize=True).sort_index().round(3).to_dict(),
+    )
     p = add_features(p)
     d = p.dropna(subset=["burnout_level"]).reset_index(drop=True)
     y = (d.burnout_level >= 2).astype(int)

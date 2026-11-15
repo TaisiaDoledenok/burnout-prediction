@@ -1,0 +1,9 @@
+# Быстрый маленький прогон для отладки
+scale:
+  n_teachers: 40
+  n_schools: 3
+period:
+  start_date: "2025-09-01"
+  end_date: "2025-12-28"
+burnout_dynamics:
+  onset_week_range: [2, 10]
