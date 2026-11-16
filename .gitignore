@@ -29,10 +29,6 @@ data/*
 .ruff_cache/
 .venv/
 __pycache__/
-<<<<<<< HEAD
-*.py[cod]
-=======
 *.py[cod]
 *.db
 data/
->>>>>>> 619e5b3 (style: добавила ruff. прогнала код через линтер и форматер. добавила ruff в гитигнор)
