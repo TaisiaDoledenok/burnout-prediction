@@ -17,13 +17,6 @@ ENV/
 .env
 .env.*
 
-# ============ other ============
-burnout/
-*.png
-*.pages
-.gitignore
-data/*
-
 # ============ Ruff ============
 .pre-commit-config.yaml
 .ruff_cache/
@@ -32,3 +25,10 @@ __pycache__/
 *.py[cod]
 *.db
 data/
+
+# ============ other ============
+burnout/
+*.png
+*.pages
+.gitignore
+data/*
